@@ -1,6 +1,7 @@
-import re
 import numpy as np
-from scipy.linalg import solve
+from sympy import*
+import re
+
 
 def validate_input(input_string) -> bool:
     """
@@ -28,11 +29,7 @@ def validate_input(input_string) -> bool:
 def check_reaction_side(component):
     if "+" in component:
         component = component.split("+")
-    if "-" in component:
-        component.split("-")
-
     return component
-
 
 def get_elements_number(part, dict_template):
     elements_number = dict_template.copy()
@@ -91,19 +88,34 @@ def get_components(reaction, side_divider="->"):
     left_components = check_reaction_side(left_side)
     right_components = check_reaction_side(rigth_side)
 
+    components = left_components + right_components
+
     left_coefficient = get_coefficient(left_components, reaction)
     right_coefficient = get_coefficient(right_components, reaction)
-    results = np.zeros([left_coefficient.shape[-1], 1])
     coefficient = np.vstack((left_coefficient, -1 * right_coefficient)).transpose()
 
-    return coefficient, left_coefficient, right_coefficient
-    # return np.hstack((coefficient, results))
+    return coefficient
 
 
-def get_balance(arrays, left_side, right_side):
+def get_balance(arrays, reaction):
+    sym_symbols = list('abcdefghijklmnopqrstuvwxyz')
+    equations = []
+    used_symbols = {}
+    for row in arrays:
+        equation = ""
+        for row_index, item in enumerate(row):
+            if item != 0:
+                used_symbols.update({sym_symbols[row_index]: Symbol(sym_symbols[row_index])})
+                equation = sympify(f'{equation}{item}*{used_symbols[sym_symbols[row_index]]}')
+            else:
+                continue
+        equations.append(equation)
 
-    left_shape = left_side.shape
-    right_shape = right_side.shape
+    result = solve(equations, [x for x in used_symbols.values()], particular=True )
+    to_output = [result[x] for x in used_symbols.values()]
+    output_string = ""
+
+
 
     a = 0
 
@@ -111,12 +123,14 @@ def main(reaction_to_balance):
     if not validate_input(reaction_to_balance):
         print('Wrong input - some character in string is not allowed')
 
-    z, x, y = get_components(reaction_to_balance)
-    get_balance(z, x, y)
+    components = get_components(reaction_to_balance)
+    get_balance(components, reaction_to_balance)
 
 if __name__ == '__main__':
     # import doctest
     # doctest.testmod()
 
     expected_output = "C6H12O6 -> 2CH3CH2OH + 2CO2"
-    main("C6H12O6 -> CH3CH2OH + CO2")
+    # main("C6H12O6 -> CH3CH2OH + CO2")
+    # main("C5H12 + O2 -> CO2 + H2O")
+    main("Z + HC -> ZC2 + H2")
