@@ -173,6 +173,16 @@ def main(reaction_to_balance):
     Main Function to run balance algorithm
     :param reaction_to_balance: string with reaction to balance
     :return: string, balanced reaction
+
+    >>> main("C5H12 + O2 -> CO2 + H2O")
+    'C5H12 + 8O2 -> 5CO2 + 6H2O'
+
+    >>> main("Z + HC -> ZC2 + H2")
+    'Z + 2HC -> ZC2 + H2'
+
+    >>> main("C2H6 + O2 -> CO2 + H2O")
+    '2C2H6 + 7O2 -> 4CO2 + 6H2O'
+
     """
     if not validate_input(reaction_to_balance):
         raise Exception('Wrong input - some character in string is not allowed')
@@ -185,9 +195,6 @@ def main(reaction_to_balance):
 if __name__ == '__main__':
     # import doctest
     # doctest.testmod()
-    # out = main("C5H12 + O2 -> CO2 + H2O")
-    # out = main("Z + HC -> ZC2 + H2")
-    # out = main("C2H6 + O2 -> CO2 + H2O")
 
     out = main('C6H12O6 -> CH3CH2OH + CO2')
     print(out)
