@@ -1,36 +1,12 @@
 import numpy as np
 from sympy import *
 import re
-import math
-
-
-def gcd(a, b):
-    if b == 0:
-        return a
-    return gcd(b, a % b)
-
-
-def get_multiplier(string_input):
-    n = len(string_input)
-    count_after_dot = 0
-    dot_seen = 0
-    num = 0
-    for i in range(n):
-        if string_input[i] != '.':
-            num = num * 10 + int(string_input[i])
-            if dot_seen == 1:
-                count_after_dot += 1
-        else:
-            dot_seen = 1
-    if dot_seen == 0:
-        return 1
-    dem = int(math.pow(10, count_after_dot))
-    return dem / gcd(num, dem)
 
 
 def validate_input(input_string) -> bool:
     """
-    :param input: string to check 
+    Function to validate input
+    :param input_string: string to check
     :return: True if in string are allowed characters False if in string exist not allowed symbol
 
     >>> validate_input("C6H12O6 -> CH3CH2OH + CO2")
@@ -52,23 +28,33 @@ def validate_input(input_string) -> bool:
 
 
 def check_reaction_side(component):
+    """
+    Function to divide side of equation to components
+    :param component: one side of equation
+    :return: components list
+    """
     if "+" in component:
         component = component.split("+")
     return component
 
 
 def get_elements_number(part, dict_template):
+    """
+    Function to parse number of elements to coefficient dict by element
+    :param part: one element from equation
+    :param dict_template: dict with structure: {element_name: 0}, for unique elements from
+             equation eg., for H20 {"H":0, "O": 0}
+    :return: dict with coefficient for each element
+    """
     elements_number = dict_template.copy()
+    multiplexer = 1
     for index, item in enumerate(part):
         number = ""
-        multiplexer = 1
-
         if index == 0 and item.isdigit():
             multiplexer = int(item)
-
         if item.isalpha():
             shifted_index = index
-            while (True):
+            while True:
                 shifted_index = shifted_index + 1
                 if shifted_index > len(part) - 1:
                     break
@@ -82,11 +68,16 @@ def get_elements_number(part, dict_template):
                 elements_number[item] = multiplexer * int(number)
             else:
                 elements_number[item] = elements_number[item] + (multiplexer * int(number))
-
     return elements_number
 
 
 def get_coefficient(components, reaction):
+    """
+    Function to get coefficient of element from one side
+    :param components: elements with number
+    :param reaction: reaction equation
+    :return: horizontal array of coefficients form one side of reaction
+    """
     unique_elements = np.unique([x for x in reaction if x.isalpha()])
     dict_template = {k: 0 for k in unique_elements}
     if isinstance(components, list):
@@ -107,6 +98,12 @@ def get_coefficient(components, reaction):
 
 
 def get_components(reaction, side_divider="->"):
+    """
+    Function to split reaction equation and get coefficients of elements
+    :param reaction: string, reaction equation
+    :param side_divider: string, side divider by default is arrow can be replaced by "=" in callback
+    :return: array of coefficients of elements from both sides
+    """
     left_side = reaction.split(side_divider)[0]
     rigth_side = reaction.split(side_divider)[-1]
 
@@ -121,6 +118,12 @@ def get_components(reaction, side_divider="->"):
 
 
 def get_balance(arrays, reaction):
+    """
+    Mathematical brain to balance reaction
+    :param arrays: array of coefficient of elements
+    :param reaction: string, reaction equation
+    :return: string, balanced reaction
+    """
     sym_symbols = list('abcdefghijklmnopqrstuvwxyz')
     equations = []
     used_symbols = {}
@@ -134,14 +137,14 @@ def get_balance(arrays, reaction):
                 continue
         equations.append(equation)
 
-    result = solve(equations, [x for x in used_symbols.values()], particular=True)
-    to_output = [round(result[used_symbols[x]],3) for x in sorted(list(used_symbols.keys()))]
+    result = solve(equations, [x for x in used_symbols.values()], particular=True, rational=True)
+    to_output = [result[used_symbols[x]] for x in sorted(list(used_symbols.keys()))]
 
     if not all(item % 1 == 0 for item in to_output):
         not_int_index = [index for index, value in enumerate(to_output) if value % 1 != 0]
         multiplier = []
         for item in not_int_index:
-            multiplier.append(get_multiplier(str(to_output[item])))
+            multiplier.append(int(str(to_output[item]).split("/")[-1].replace(']', "")))
 
         if len(multiplier) == 1:
             to_output = [x * multiplier[0] for x in to_output]
@@ -166,8 +169,13 @@ def get_balance(arrays, reaction):
 
 
 def main(reaction_to_balance):
+    """
+    Main Function to run balance algorithm
+    :param reaction_to_balance: string with reaction to balance
+    :return: string, balanced reaction
+    """
     if not validate_input(reaction_to_balance):
-        assert 'Wrong input - some character in string is not allowed'
+        raise Exception('Wrong input - some character in string is not allowed')
 
     components = get_components(reaction_to_balance)
     output_string = get_balance(components, reaction_to_balance)
@@ -177,7 +185,9 @@ def main(reaction_to_balance):
 if __name__ == '__main__':
     # import doctest
     # doctest.testmod()
-    out = main('C6H12O6 -> CH3CH2OH + CO2')
     # out = main("C5H12 + O2 -> CO2 + H2O")
     # out = main("Z + HC -> ZC2 + H2")
+    # out = main("C2H6 + O2 -> CO2 + H2O")
+
+    out = main('C6H12O6 -> CH3CH2OH + CO2')
     print(out)
